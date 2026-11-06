@@ -2,7 +2,7 @@ import importlib
 
 import pandas as pd
 
-ing = importlib.import_module("flows.common.00_ingestion")
+ing = importlib.import_module("flows.00_ingestion")
 
 
 def _fake_source(tmp_path):

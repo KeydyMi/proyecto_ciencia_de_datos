@@ -1,6 +1,6 @@
 import importlib
 
-from flows.common import job
+from flows import job
 
 
 def test_stages_are_ordered_and_importable():
