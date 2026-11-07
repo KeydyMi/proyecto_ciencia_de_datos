@@ -40,11 +40,12 @@ def add_person(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df['Person'] = np.where(df['Age'] < 16, 'child', df['Sex'])
     return df         # Paso 8
+
 def add_cabin_features(df: pd.DataFrame) -> pd.DataFrame:
      """Agrega 'TCabin' (primera letra de Cabin, 'X' si es nula) y 'HasCabin' (0/1)."""
      df = df.copy()
      df['TCabin'] = df['Cabin'].str[0].fillna('X')
-     df['HasCabin'] = df['Cabin'].notna().astype(int)
+     df['HasCabin'] = df['Cabin'].notna().astype(int) 
      return df # Pasos 11 y 24 (TCabin, HasCabin)
 def add_family_features(df: pd.DataFrame) -> pd.DataFrame: ...  # Paso 14 (Familia, Alone)
 def add_survivor_label(df: pd.DataFrame) -> pd.DataFrame: ...   # Paso 16 (Survivor)
