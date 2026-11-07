@@ -47,7 +47,14 @@ def add_cabin_features(df: pd.DataFrame) -> pd.DataFrame:
      df['TCabin'] = df['Cabin'].str[0].fillna('X')
      df['HasCabin'] = df['Cabin'].notna().astype(int) 
      return df # Pasos 11 y 24 (TCabin, HasCabin)
-def add_family_features(df: pd.DataFrame) -> pd.DataFrame: ...  # Paso 14 (Familia, Alone)
+
+def add_family_features(df: pd.DataFrame) -> pd.DataFrame: 
+    """Agrega 'Familia' = SibSp + Parch y 'Alone' ('with Family' si Familia > 0, 'Alone' si no)."""
+    df = df.copy()
+    df['Familia'] = df['SibSp'] + df['Parch']
+    df['Alone'] = np.where(df['Familia'] > 0, 'with Family', 'Alone')
+    return df # Paso 14 (Familia, Alone)
+
 def add_survivor_label(df: pd.DataFrame) -> pd.DataFrame: ...   # Paso 16 (Survivor)
 def add_title(df: pd.DataFrame) -> pd.DataFrame: ...            # Paso 25 (TTitulo)
 def consolidate_titles(df: pd.DataFrame) -> pd.DataFrame: ...   # Paso 26
