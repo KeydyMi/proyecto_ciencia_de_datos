@@ -68,7 +68,26 @@ def add_title(df: pd.DataFrame) -> pd.DataFrame:
     df['TTitulo'] = df['Name'].str.extract(r',\s*([^\.]+)\.', expand=False).str.strip()
     return df         # Paso 25 (TTitulo)
 
-def consolidate_titles(df: pd.DataFrame) -> pd.DataFrame: ...   # Paso 26
+# Constantes para el manejo de títulos (Paso 26)
+TITLE_MAP = {
+    'Master': 'Mr',
+    'Mme': 'Mrs',
+    'Dona': 'Mrs',
+    'the Countess': 'Mrs',
+    'Mlle': 'Miss',
+    'Ms': 'Miss',
+    'Lady': 'Miss'
+}
+MAIN_TITLES = ['Mr', 'Mrs', 'Miss']
+
+def consolidate_titles(df: pd.DataFrame) -> pd.DataFrame: 
+    """Consolida títulos raros usando TITLE_MAP y agrupa los restantes en 'Otro'."""
+    df = df.copy()
+    # 1. Reemplazamos títulos usando el diccionario TITLE_MAP
+    df['TTitulo'] = df['TTitulo'].replace(TITLE_MAP)
+    # 2. Todo título que no esté en MAIN_TITLES pasa a 'Otro'
+    df['TTitulo'] = df['TTitulo'].where(df['TTitulo'].isin(MAIN_TITLES), 'Otro')
+    return df   # Paso 26
 
 def impute_embarked(df: pd.DataFrame) -> pd.DataFrame:
     """Rellena los valores faltantes en 'Embarked' con la categoría más frecuente (moda)."""
@@ -76,6 +95,7 @@ def impute_embarked(df: pd.DataFrame) -> pd.DataFrame:
     moda_embarked = df['Embarked'].mode()[0]
     df['Embarked'] = df['Embarked'].fillna(moda_embarked)
     return df     # Paso 21
+
 def impute_age(df: pd.DataFrame) -> pd.DataFrame:
     """Imputa 'Age' con el promedio por 'Sex'.
 
@@ -101,18 +121,17 @@ def impute_age(df: pd.DataFrame) -> pd.DataFrame:
 DECKS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'T', 'X']
 
 def encode_categoricals(df: pd.DataFrame) -> pd.DataFrame:
-    """Crea columnas codificadas numéricamente como 'NEmbarked', 'NSex' y 'NCabin'."""
+    """Crea columnas codificadas numéricamente como 'NEmbarked', 'NSex', 'NCabin' y 'NTitulo'."""
     df = df.copy()
     
-    # NEmbarked (Paso 21)
     df['NEmbarked'] = df['Embarked'].map({'S': 0, 'C': 1, 'Q': 2})
-    
-    # NSex (Paso 23): female -> 0, male -> 1
     df['NSex'] = df['Sex'].map({'female': 0, 'male': 1})
     
-    # NCabin (Paso 24): Mapa fijo basado en la constante DECKS
     deck_map = {letra: i for i, letra in enumerate(DECKS)}
     df['NCabin'] = df['TCabin'].map(deck_map)
+    
+    # 3. NTitulo (Paso 26): Mr -> 0, Mrs -> 1, Miss -> 2, Otro -> 3
+    df['NTitulo'] = df['TTitulo'].map({'Mr': 0, 'Mrs': 1, 'Miss': 2, 'Otro': 3})
     
     return df # Pasos 21, 23, 24, 26
 
