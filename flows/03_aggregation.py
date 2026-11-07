@@ -101,8 +101,9 @@ def survival_by_family(df: pd.DataFrame) -> pd.DataFrame:                 # Paso
 
 def outlier_mask_iqr(s: pd.Series) -> pd.Series:                          # Paso 38 (1)
     """Máscara booleana para detectar atípicos usando el rango intercuartílico (IQR)."""
-    Q1 = s.quantile(0.25)
-    Q3 = s.quantile(0.75)
+    q = s.quantile([0.25, 0.75])
+    Q1 = q.loc[0.25]
+    Q3 = q.loc[0.75]
     IQR = Q3 - Q1
     lower_bound = Q1 - 1.5 * IQR
     upper_bound = Q3 + 1.5 * IQR
@@ -111,7 +112,10 @@ def outlier_mask_iqr(s: pd.Series) -> pd.Series:                          # Paso
 
 def outlier_summary(df: pd.DataFrame) -> pd.DataFrame:                    # Paso 38 (2-3)
     """Resumen de valores atípicos detectados en columnas numéricas clave."""
-    cols_to_check = ['Fare', 'Age', 'SibSp', 'Parch']
+    # Verificamos si existe AgeOriginal, de lo contrario usamos Age
+    age_col = 'AgeOriginal' if 'AgeOriginal' in df.columns else 'Age'
+    cols_to_check = ['Fare', age_col, 'Familia']
+    
     summary_data = []
     for col in cols_to_check:
         if col in df.columns:
@@ -122,6 +126,7 @@ def outlier_summary(df: pd.DataFrame) -> pd.DataFrame:                    # Paso
                 'total_count': int(len(df)),
                 'pct_outliers': float(mask.mean() * 100)
             })
+            
     return pd.DataFrame(summary_data).rename(columns=str)
 
 
