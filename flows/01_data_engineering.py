@@ -135,7 +135,14 @@ def encode_categoricals(df: pd.DataFrame) -> pd.DataFrame:
     
     return df # Pasos 21, 23, 24, 26
 
-def drop_original_columns(df: pd.DataFrame) -> pd.DataFrame: ...  # Paso 32
+def drop_original_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Devuelve una COPIA sin las columnas originales Name, Sex, Embarked y Cabin."""
+    df = df.copy()
+    # Eliminamos las columnas de texto originales que ya tienen sus equivalentes numéricos/derivados
+    cols_to_drop = ['Name', 'Sex', 'Embarked', 'Cabin']
+    df = df.drop(columns=[col for col in cols_to_drop if col in df.columns])
+    return df  # Paso 32
+
 def validate_silver(df: pd.DataFrame) -> pd.DataFrame: ...      # Paso 33
 
 
