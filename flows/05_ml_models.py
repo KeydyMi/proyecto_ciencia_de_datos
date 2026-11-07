@@ -146,3 +146,55 @@ def get_candidates(random_state: int = 42) -> dict:
         "hgb": HistGradientBoostingClassifier(random_state=random_state),
         "knn": KNeighborsClassifier(),
     }
+
+def cross_validate_candidates(X, y, num_features=None, cat_features=None,
+                              random_state=None, cv_folds=None) -> pd.DataFrame:
+    """Devuelve un DataFrame con media y desviación de cada métrica por modelo."""
+    rs = random_state if random_state is not None else getattr(settings, "RANDOM_STATE", 42)
+    folds = cv_folds if cv_folds is not None else 5
+    
+    cv = StratifiedKFold(n_splits=folds, shuffle=True, random_state=rs)
+    candidates = get_candidates(rs)
+    
+    records = []
+    for name, model in candidates.items():
+        pipe = build_pipeline(model, num_features, cat_features)
+        res = cross_validate(pipe, X, y, cv=cv, scoring=SCORING, return_train_score=True)
+        
+        record = {"model": name}
+        for metric in SCORING:
+            test_scores = res[f"test_{metric}"]
+            train_scores = res[f"train_{metric}"]
+            record[f"test_{metric}_mean"] = test_scores.mean()
+            record[f"test_{metric}_std"] = test_scores.std()
+            record[f"train_{metric}_mean"] = train_scores.mean()
+            record[f"train_{metric}_std"] = train_scores.std()
+            
+        records.append(record)
+        
+    df_results = pd.DataFrame(records)
+    sort_col = f"test_{PRIMARY_METRIC}_mean"
+    if sort_col in df_results.columns:
+        df_results = df_results.sort_values(by=sort_col, ascending=False).reset_index(drop=True)
+        
+    return df_results
+
+def get_param_grids() -> dict[str, dict]:
+    """Rejillas por modelo, con los nombres que espera el Pipeline (prefijo 'model__')."""
+    return {
+        'logreg': {
+            'model__C': [0.01, 0.1, 1, 10], 
+            'model__penalty': ['l2']
+        },
+        'forest': {
+            'model__n_estimators': [200, 400], 
+            'model__max_depth': [4, 6, 8, None],
+            'model__min_samples_leaf': [1, 3, 5]
+        },
+        'hgb': {
+            'model__learning_rate': [0.03, 0.1], 
+            'model__max_depth': [2, 3, 4],
+            'model__max_iter': [100, 200], 
+            'model__l2_regularization': [0.0, 1.0]
+        }
+    }
