@@ -75,7 +75,6 @@ def impute_age(df: pd.DataFrame) -> pd.DataFrame: ...           # Paso 22
 def encode_categoricals(df: pd.DataFrame) -> pd.DataFrame: 
     """Crea columnas codificadas numéricamente como 'NEmbarked'."""
     df = df.copy()
-    # Mapeo para NEmbarked según las instrucciones del Paso 21
     df['NEmbarked'] = df['Embarked'].map({'S': 0, 'C': 1, 'Q': 2})
     return df # Pasos 21, 23, 24, 26
 
