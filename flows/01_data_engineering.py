@@ -28,9 +28,33 @@ TITLE_MAP = {                        # consolidación de títulos (Paso 26)
 }
 MAIN_TITLES = ["Mr", "Mrs", "Miss"]
 
+EXPECTED_COLUMNS = [
+    "PassengerId", "Survived", "Pclass", "Name", "Sex", "Age",
+    "SibSp", "Parch", "Ticket", "Fare", "Cabin", "Embarked"
+]
 
-def validate_bronze(df: pd.DataFrame) -> pd.DataFrame: ...      # contrato de entrada
-def cast_types(df: pd.DataFrame) -> pd.DataFrame: ...           # Survived -> int, etc.
+def validate_bronze(df: pd.DataFrame) -> pd.DataFrame: 
+    """Valida el contrato de Bronze: columnas requeridas y sin PassengerId duplicados."""
+    missing = [col for col in EXPECTED_COLUMNS if col not in df.columns]
+    if missing:
+        raise ValueError(f"Faltan columnas requeridas en Bronze: {missing}")
+    if df["PassengerId"].duplicated().any():
+        raise ValueError("Existen valores duplicados en 'PassengerId'")
+    return df      # contrato de entrada
+
+def cast_types(df: pd.DataFrame) -> pd.DataFrame: 
+    """Convierte los tipos de datos a entero o flotante según corresponda."""
+    df = df.copy()
+    int_cols = ['Survived', 'Pclass', 'SibSp', 'Parch']
+    float_cols = ['Age', 'Fare']
+    for col in int_cols:
+        if col in df.columns:
+            df[col] = df[col].astype(int)
+    for col in float_cols:
+        if col in df.columns:
+            df[col] = df[col].astype(float)
+    return df          # Survived -> int, etc.
+
 def add_person(df: pd.DataFrame) -> pd.DataFrame: 
     """Agrega 'Person': 'child' si Age < 16; si no, el valor de Sex.
 
@@ -143,7 +167,16 @@ def drop_original_columns(df: pd.DataFrame) -> pd.DataFrame:
     df = df.drop(columns=[col for col in cols_to_drop if col in df.columns])
     return df  # Paso 32
 
-def validate_silver(df: pd.DataFrame) -> pd.DataFrame: ...      # Paso 33
+def validate_silver(df: pd.DataFrame) -> pd.DataFrame: 
+    """Valida el contrato de Silver: sin nulos en columnas clave (AgeOriginal sí puede tenerlos)."""
+    key_cols = [
+        'Survived', 'Pclass', 'Age', 'Fare', 'Embarked', 'Person', 
+        'Alone', 'TCabin', 'TTitulo', 'NSex', 'NEmbarked', 'NCabin', 'NTitulo'
+    ]
+    for col in key_cols:
+        if col in df.columns and df[col].isna().any():
+            raise ValueError(f"La columna clave '{col}' contiene valores nulos en la capa Silver.")
+    return df      # Paso 33
 
 
 def build_silver(bronze: pd.DataFrame) -> pd.DataFrame:
