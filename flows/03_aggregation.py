@@ -1,6 +1,8 @@
 import pandas as pd
 from typing import Dict
 
+from scipy import stats
+
 def group_stats(df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
     """Genera cuatro tablas estadísticas agrupadas con groupby y devuelve un diccionario."""
     
@@ -22,4 +24,19 @@ def group_stats(df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
         'survival_by_sex': survival_by_sex,
         'survival_by_pclass': survival_by_pclass,
         'survival_by_alone': survival_by_alone
+    }
+
+def chi2_sex_survival(df: pd.DataFrame) -> dict:
+    """Calcula la prueba de independencia Chi-cuadrado entre 'Sex' y 'Survived'."""
+    # 1. Creamos la tabla cruzada
+    tabla = pd.crosstab(df['Sex'], df['Survived'])
+    
+    # 2. Aplicamos la prueba de contingencia de chi-cuadrado
+    chi2, p, dof, esperado = stats.chi2_contingency(tabla)
+    
+    # Retornamos los resultados en formato de diccionario
+    return {
+        'chi2': float(chi2),
+        'p_value': float(p),
+        'dof': int(dof)
     }
