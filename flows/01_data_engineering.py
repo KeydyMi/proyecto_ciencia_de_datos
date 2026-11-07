@@ -61,7 +61,13 @@ def add_survivor_label(df: pd.DataFrame) -> pd.DataFrame:
     df['Survivor'] = df['Survived'].map({0: 'No', 1: 'Yes'})
     return df   # Paso 16 (Survivor)
 
-def add_title(df: pd.DataFrame) -> pd.DataFrame: ...            # Paso 25 (TTitulo)
+def add_title(df: pd.DataFrame) -> pd.DataFrame: 
+    """Extrae el título del nombre del pasajero usando expresiones regulares y crea 'TTitulo'."""
+    df = df.copy()
+    # Extrae el texto entre la coma y el punto, y elimina espacios sobrantes con .str.strip()
+    df['TTitulo'] = df['Name'].str.extract(r',\s*([^\.]+)\.', expand=False).str.strip()
+    return df         # Paso 25 (TTitulo)
+
 def consolidate_titles(df: pd.DataFrame) -> pd.DataFrame: ...   # Paso 26
 
 def impute_embarked(df: pd.DataFrame) -> pd.DataFrame:
