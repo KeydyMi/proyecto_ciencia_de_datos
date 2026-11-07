@@ -219,3 +219,154 @@ def evaluate_on_test(pipeline, X_test, y_test, threshold: float = 0.5) -> dict:
         "roc_auc": float(roc_auc),
         "n_test": int(len(y_test))   # <-- Cambiado de n_samples a n_test
     }
+# --- Decisiones congeladas (resultado del cuaderno 04; justificadas en reports/problema_ml.md) ---
+MODEL_NAME = "titanic_model_v1"
+FINAL_ESTIMATOR = "hgb"                 # Nombre del mejor modelo en get_candidates()
+FINAL_PARAMS = {                        # Mejores hiperparámetros obtenidos en el GridSearch (Paso 57)
+    "model__learning_rate": 0.05,
+    "model__max_depth": 3,
+    "model__max_iter": 200,
+    "model__l2_regularization": 1.0,
+}
+USE_CABIN_FEATURES = False              # Decisión de ablación del Paso 61 (sin cabinas)
+THRESHOLD = 0.30                        # Umbral óptimo de decisión (Paso 53)
+
+from sklearn.pipeline import Pipeline
+import pandas as pd
+
+def train_final(X: pd.DataFrame, y: pd.Series) -> Pipeline:
+    """Construye el pipeline con las decisiones congeladas y lo entrena con TODO (X, y)."""
+    # 1. Definir columnas numéricas y categóricas según si se usan o no las características de cabina
+    if USE_CABIN_FEATURES:
+        num = NUM_FEATURES + CABIN_NUM
+        cat = CAT_FEATURES + CABIN_CAT
+    else:
+        num = NUM_FEATURES
+        cat = CAT_FEATURES
+
+    # 2. Obtener el modelo candidato seleccionado congelado
+    modelo = get_candidates(42)[FINAL_ESTIMATOR]
+
+    # 3. Construir el pipeline pasando las listas de columnas y aplicando los hiperparámetros congelados
+    pipe = build_pipeline(modelo, num, cat).set_params(**FINAL_PARAMS)
+
+    # 4. Ajustar y retornar el pipeline entrenado con TODOS los datos disponibles
+    return pipe.fit(X, y)
+import joblib
+import json
+import platform
+import sklearn
+from datetime import datetime, timezone
+
+def save_model(pipeline: Pipeline, metadata: dict, name: str = MODEL_NAME,
+               models_dir: Path = MODELS) -> Path:
+    """Guarda el pipeline (.joblib) y un archivo de metadatos (.metadata.json)."""
+    models_dir = Path(models_dir)
+    models_dir.mkdir(parents=True, exist_ok=True)
+    model_path = models_dir / f"{name}.joblib"
+    joblib.dump(pipeline, model_path)
+    meta = {
+        **metadata,
+        "name": name,
+        "saved_at": datetime.now(timezone.utc).isoformat(),
+        "python_version": platform.python_version(),
+        "sklearn_version": sklearn.__version__,
+        "pandas_version": pd.pandas.__version__ if hasattr(pd, 'pandas') else pd.__version__,
+        "model_sha256": sha256_of(model_path),
+    }
+    (models_dir / f"{name}.metadata.json").write_text(
+        json.dumps(meta, indent=2, ensure_ascii=False, default=str), encoding="utf-8"
+    )
+    log.info("Modelo guardado en %s", model_path)
+    return model_path
+
+def load_model(path: Path) -> tuple[Pipeline, dict]:
+    """Carga el pipeline y sus metadatos; avisa si la versión de scikit-learn cambió."""
+    path = Path(path)
+    pipeline = joblib.load(path)
+    meta = json.loads(path.with_suffix(".metadata.json").read_text(encoding="utf-8"))
+    if meta.get("sklearn_version") != sklearn.__version__:
+        log.warning("Modelo entrenado con scikit-learn %s; versión actual %s",
+                    meta.get("sklearn_version"), sklearn.__version__)
+    return pipeline, meta
+
+def run(in_dir: Path | None = None, models_dir: Path = MODELS) -> Path:
+    """Silver -> evaluación honesta -> modelo final entrenado y guardado."""
+    log.info("Iniciando flujo completo de modelado (Paso 68)...")
+    
+    # 1. Cargar el dataset completo desde Silver
+    data_path = Path(in_dir) / SILVER_NAME if in_dir else (SILVER / SILVER_NAME)
+    X, y = load_dataset(data_path)
+    
+    # 2. Dividir para la evaluación honesta inicial
+    X_tr, X_te, y_tr, y_te = split(X, y)
+    
+    # 3. Evaluación honesta: entrenar con X_tr y evaluar en X_te con el umbral congelado
+    # Construimos un pipeline temporal solo para auditar el rendimiento esperado
+    num = NUM_FEATURES + CABIN_NUM if USE_CABIN_FEATURES else NUM_FEATURES
+    cat = CAT_FEATURES + CABIN_CAT if USE_CABIN_FEATURES else CAT_FEATURES
+    modelo_eval = get_candidates(42)[FINAL_ESTIMATOR]
+    pipe_eval = build_pipeline(modelo_eval, num, cat).set_params(**FINAL_PARAMS)
+    pipe_eval.fit(X_tr, y_tr)
+    
+    metrics = evaluate_on_test(pipe_eval, X_te, y_te, THRESHOLD)
+    log.info("Métricas de evaluación honesta en prueba: %s", metrics)
+    
+    # 4. Modelo definitivo: entrenar con TODOS los datos etiquetados (X, y)
+    final_pipeline = train_final(X, y)
+    
+    # 5. Preparar metadatos completos exigidos
+    metadata = {
+        "estimator": FINAL_ESTIMATOR,
+        "params": FINAL_PARAMS,
+        "features": {
+            "num": num,
+            "cat": cat
+        },
+        "target": TARGET,
+        "threshold": THRESHOLD,
+        "random_state": getattr(settings, "RANDOM_STATE", 42),
+        "n_train": int(len(X)),
+        "data_sha256": sha256_of(data_path),
+        "metrics": metrics
+    }
+    
+    # 6. Guardar el modelo definitivo y sus metadatos
+    model_path = save_model(final_pipeline, metadata, models_dir=Path(models_dir))
+    log.info("¡Flujo completado con éxito! Modelo guardado en %s", model_path)
+    
+    return model_path
+
+def predict(pipeline: Pipeline, X: pd.DataFrame, threshold: float = THRESHOLD) -> pd.DataFrame:
+    """Devuelve un DataFrame con 'proba_survive' y 'pred' (0/1) para cada fila de X."""
+    proba = pipeline.predict_proba(X)[:, 1]
+    pred = (proba >= threshold).astype(int)
+    
+    result_df = pd.DataFrame({
+        "proba_survive": proba,
+        "pred": pred
+    }, index=X.index)
+    
+    return result_df
+def test_save_and_load_roundtrip(tmp_path, toy):
+    X, y = toy
+    pipe = ml.build_pipeline(ml.get_candidates(42)["logreg"]).fit(X, y)
+    class ml:
+        ...
+
+    path = ml.save_model(pipe, {"estimator": "logreg", "n_train": len(X)},
+                         name="toy_model", models_dir=tmp_path)
+    loaded, meta = ml.load_model(path)
+    assert np.array_equal(pipe.predict(X), loaded.predict(X))     # mismas predicciones
+    assert {"sklearn_version", "python_version", "model_sha256", "saved_at"} <= set(meta)
+    assert meta["n_train"] == len(X)
+
+def test_predict_returns_probabilities_and_labels(toy):
+    X, y = toy
+    class ml:
+        ...
+
+    pipe = ml.build_pipeline(ml.get_candidates(42)["logreg"]).fit(X, y)
+    out = ml.predict(pipe, X, threshold=0.5)
+    assert list(out.columns) == ["proba_survive", "pred"]
+    assert set(out["pred"].unique()) <= {0, 1}

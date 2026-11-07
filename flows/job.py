@@ -12,7 +12,7 @@ STAGES = {
     "ingestion": "flows.00_ingestion",
     "silver": "flows.01_data_engineering",
     "gold": "flows.03_aggregation",
-    #"train": "flows.05_ml_models",
+    "train": "flows.05_ml_models",
 }
 
 
