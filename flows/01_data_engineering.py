@@ -31,7 +31,15 @@ MAIN_TITLES = ["Mr", "Mrs", "Miss"]
 
 def validate_bronze(df: pd.DataFrame) -> pd.DataFrame: ...      # contrato de entrada
 def cast_types(df: pd.DataFrame) -> pd.DataFrame: ...           # Survived -> int, etc.
-def add_person(df: pd.DataFrame) -> pd.DataFrame: ...           # Paso 8
+def add_person(df: pd.DataFrame) -> pd.DataFrame: 
+    """Agrega 'Person': 'child' si Age < 16; si no, el valor de Sex.
+
+    Regla para edad desconocida (NaN): se usa Sex. Esto subestima a los niños
+    sin edad registrada; el sesgo se cuantifica en el Reto 8.1.
+    """
+    df = df.copy()
+    df['Person'] = np.where(df['Age'] < 16, 'child', df['Sex'])
+    return df         # Paso 8
 def add_cabin_features(df: pd.DataFrame) -> pd.DataFrame: ...   # Pasos 11 y 24 (TCabin, HasCabin)
 def add_family_features(df: pd.DataFrame) -> pd.DataFrame: ...  # Paso 14 (Familia, Alone)
 def add_survivor_label(df: pd.DataFrame) -> pd.DataFrame: ...   # Paso 16 (Survivor)
