@@ -198,3 +198,24 @@ def get_param_grids() -> dict[str, dict]:
             'model__l2_regularization': [0.0, 1.0]
         }
     }
+
+from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
+
+def evaluate_on_test(pipeline, X_test, y_test, threshold: float = 0.5) -> dict:
+    """Devuelve exactitud, F1, ROC-AUC y el tamaño de la prueba (dict serializable a JSON)."""
+    proba = pipeline.predict_proba(X_test)[:, 1]
+    pred = (proba >= threshold).astype(int)
+    
+    acc = accuracy_score(y_test, pred)
+    f1 = f1_score(y_test, pred)
+    try:
+        roc_auc = roc_auc_score(y_test, proba)
+    except ValueError:
+        roc_auc = float('nan')
+        
+    return {
+        "accuracy": float(acc),
+        "f1": float(f1),             # <-- Cambiado de f1_score a f1
+        "roc_auc": float(roc_auc),
+        "n_test": int(len(y_test))   # <-- Cambiado de n_samples a n_test
+    }
