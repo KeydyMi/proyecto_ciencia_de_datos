@@ -46,3 +46,16 @@ def load_dataset(path: Path | None = None) -> tuple[pd.DataFrame, pd.Series]:
     X = df[CANDIDATE_COLUMNS].copy()
     X["Age"] = df["AgeOriginal"]
     return X, df[TARGET].astype(int)
+
+def split(X: pd.DataFrame, y: pd.Series, test_size: float | None = None,
+          random_state: int | None = None):
+    """Devuelve X_train, X_test, y_train, y_test, estratificado por y."""
+    ts = test_size if test_size is not None else getattr(settings, "TEST_SIZE", 0.2)
+    rs = random_state if random_state is not None else getattr(settings, "RANDOM_STATE", 42)
+    
+    return train_test_split(
+        X, y,
+        test_size=ts,
+        random_state=rs,
+        stratify=y
+    )
