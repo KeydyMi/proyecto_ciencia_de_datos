@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from matplotlib.pyplot import table
 import pandas as pd
 from scipy import stats
 
@@ -40,16 +41,15 @@ def chi2_sex_survival(df: pd.DataFrame) -> dict:                          # Paso
 
 
 def survival_by_class_sex(df: pd.DataFrame) -> pd.DataFrame:              # Paso 34
-    """Supervivencia cruzada por Clase y Sexo."""
-    tabla = pd.pivot_table(
+   """Supervivencia cruzada por Clase y Sexo (tasa de supervivencia)."""
+   tabla: pd.DataFrame = pd.pivot_table(
         df, 
         values='Survived', 
         index='Pclass', 
         columns='Sex', 
-        aggfunc=['mean', 'sum', 'count']
+        aggfunc='mean'
     )
-    tabla.columns = [f"{col}_{agg}" for agg, col in tabla.columns]
-    return tabla.reset_index().rename(columns=str)
+   return tabla.reset_index().rename(columns=str)
 
 
 def survival_by_embarked(df: pd.DataFrame) -> pd.DataFrame:               # Paso 35 (1)
@@ -70,10 +70,10 @@ def survival_by_embarked_class(df: pd.DataFrame) -> pd.DataFrame:         # Paso
 
 
 def add_fare_quartile(df: pd.DataFrame) -> pd.DataFrame:                  # Paso 36 (1)
-    """Añade cuartiles de tarifa (Fare)."""
+    """Añade cuartiles de tarifa (Fare) calculados por clase con etiquetas enteras."""
     df = df.copy()
     df['FareQ'] = df.groupby('Pclass')['Fare'].transform(
-        lambda s: pd.qcut(s, 4, labels=['Q1', 'Q2', 'Q3', 'Q4'], duplicates='drop')
+        lambda s: pd.qcut(s, 4, labels=False, duplicates='drop')
     )
     return df
 
