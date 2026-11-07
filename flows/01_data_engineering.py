@@ -91,10 +91,23 @@ def impute_age(df: pd.DataFrame) -> pd.DataFrame:
     
     return df          # Paso 22
 
-def encode_categoricals(df: pd.DataFrame) -> pd.DataFrame: 
-    """Crea columnas codificadas numéricamente como 'NEmbarked'."""
+# Definimos la constante DECKS fija para NCabin (Paso 24)
+DECKS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'T', 'X']
+
+def encode_categoricals(df: pd.DataFrame) -> pd.DataFrame:
+    """Crea columnas codificadas numéricamente como 'NEmbarked', 'NSex' y 'NCabin'."""
     df = df.copy()
+    
+    # NEmbarked (Paso 21)
     df['NEmbarked'] = df['Embarked'].map({'S': 0, 'C': 1, 'Q': 2})
+    
+    # NSex (Paso 23): female -> 0, male -> 1
+    df['NSex'] = df['Sex'].map({'female': 0, 'male': 1})
+    
+    # NCabin (Paso 24): Mapa fijo basado en la constante DECKS
+    deck_map = {letra: i for i, letra in enumerate(DECKS)}
+    df['NCabin'] = df['TCabin'].map(deck_map)
+    
     return df # Pasos 21, 23, 24, 26
 
 def drop_original_columns(df: pd.DataFrame) -> pd.DataFrame: ...  # Paso 32
