@@ -55,7 +55,12 @@ def add_family_features(df: pd.DataFrame) -> pd.DataFrame:
     df['Alone'] = np.where(df['Familia'] > 0, 'with Family', 'Alone')
     return df # Paso 14 (Familia, Alone)
 
-def add_survivor_label(df: pd.DataFrame) -> pd.DataFrame: ...   # Paso 16 (Survivor)
+def add_survivor_label(df: pd.DataFrame) -> pd.DataFrame: 
+    """Agrega 'Survivor' mapeando 0 -> 'No' y 1 -> 'Yes' (solo para etiquetar gráficos)."""
+    df = df.copy()
+    df['Survivor'] = df['Survived'].map({0: 'No', 1: 'Yes'})
+    return df   # Paso 16 (Survivor)
+
 def add_title(df: pd.DataFrame) -> pd.DataFrame: ...            # Paso 25 (TTitulo)
 def consolidate_titles(df: pd.DataFrame) -> pd.DataFrame: ...   # Paso 26
 def impute_embarked(df: pd.DataFrame) -> pd.DataFrame: ...      # Paso 21
