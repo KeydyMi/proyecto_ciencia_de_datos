@@ -63,9 +63,22 @@ def add_survivor_label(df: pd.DataFrame) -> pd.DataFrame:
 
 def add_title(df: pd.DataFrame) -> pd.DataFrame: ...            # Paso 25 (TTitulo)
 def consolidate_titles(df: pd.DataFrame) -> pd.DataFrame: ...   # Paso 26
-def impute_embarked(df: pd.DataFrame) -> pd.DataFrame: ...      # Paso 21
+
+def impute_embarked(df: pd.DataFrame) -> pd.DataFrame:
+    """Rellena los valores faltantes en 'Embarked' con la categoría más frecuente (moda)."""
+    df = df.copy()
+    moda_embarked = df['Embarked'].mode()[0]
+    df['Embarked'] = df['Embarked'].fillna(moda_embarked)
+    return df     # Paso 21
 def impute_age(df: pd.DataFrame) -> pd.DataFrame: ...           # Paso 22
-def encode_categoricals(df: pd.DataFrame) -> pd.DataFrame: ...  # Pasos 21, 23, 24, 26
+
+def encode_categoricals(df: pd.DataFrame) -> pd.DataFrame: 
+    """Crea columnas codificadas numéricamente como 'NEmbarked'."""
+    df = df.copy()
+    # Mapeo para NEmbarked según las instrucciones del Paso 21
+    df['NEmbarked'] = df['Embarked'].map({'S': 0, 'C': 1, 'Q': 2})
+    return df # Pasos 21, 23, 24, 26
+
 def drop_original_columns(df: pd.DataFrame) -> pd.DataFrame: ...  # Paso 32
 def validate_silver(df: pd.DataFrame) -> pd.DataFrame: ...      # Paso 33
 
