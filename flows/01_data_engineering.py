@@ -70,7 +70,26 @@ def impute_embarked(df: pd.DataFrame) -> pd.DataFrame:
     moda_embarked = df['Embarked'].mode()[0]
     df['Embarked'] = df['Embarked'].fillna(moda_embarked)
     return df     # Paso 21
-def impute_age(df: pd.DataFrame) -> pd.DataFrame: ...           # Paso 22
+def impute_age(df: pd.DataFrame) -> pd.DataFrame:
+    """Imputa 'Age' con el promedio por 'Sex'.
+
+    Conserva la edad original en 'AgeOriginal' (con NaN) y marca las filas
+    imputadas en 'AgeImputada' (bool). Usada para EXPLORAR; el modelo (Parte 11)
+    vuelve a imputar solo con datos de entrenamiento.
+    """
+    df = df.copy()
+    
+    # 1. Guardamos la edad original y creamos la marca booleana de imputación
+    df['AgeOriginal'] = df['Age']
+    df['AgeImputada'] = df['Age'].isna()
+    
+    # 2. Calculamos los promedios de edad agrupados por 'Sex'
+    promedios = df.groupby('Sex')['Age'].mean()
+    
+    # 3. Rellenamos los nulos de 'Age' mapeando con los promedios calculados por género
+    df['Age'] = df['Age'].fillna(df['Sex'].map(promedios))
+    
+    return df          # Paso 22
 
 def encode_categoricals(df: pd.DataFrame) -> pd.DataFrame: 
     """Crea columnas codificadas numéricamente como 'NEmbarked'."""
