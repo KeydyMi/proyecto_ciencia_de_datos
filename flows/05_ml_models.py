@@ -131,7 +131,8 @@ class GroupAgeImputer(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None):
         X_ = X.copy()
         self.global_mean_ = X_['Age'].mean()
-        self.means_ = X_.groupby(list(self.group_cols))['Age'].mean().to_dict()
+        cols = list(self.group_cols)
+        self.means_ = X_.groupby(cols)['Age'].mean().to_dict()
         return self
 
     def transform(self, X):
@@ -139,22 +140,30 @@ class GroupAgeImputer(BaseEstimator, TransformerMixin):
         if 'Age' not in X_.columns:
             return X_
         
+        cols = list(self.group_cols)
         def impute_row(row):
             if pd.isna(row['Age']):
-                key = tuple(row[col] for col in self.group_cols)
-                return self.means_.get(key, self.global_mean_)
+                if len(cols) == 1:
+                    val = row[cols[0]]
+                    if val in self.means_:
+                        return self.means_[val]
+                    elif (val,) in self.means_:
+                        return self.means_[(val,)]
+                    return self.global_mean_
+                else:
+                    key = tuple(row[col] for col in cols)
+                    return self.means_.get(key, self.global_mean_)
             return row['Age']
             
         X_['Age'] = X_.apply(impute_row, axis=1)
         return X_
 
-
-def get_candidates(random_state: int = 42) -> dict:
-    """Retorna un diccionario con los modelos candidatos iniciales para validación."""
-    return {
+    def get_candidates(random_state: int = 42) -> dict:
+     """Retorna un diccionario con los modelos candidatos iniciales para validación."""
+     return {
         "dummy": DummyClassifier(strategy="most_frequent"),
         "logreg": LogisticRegression(max_iter=1000, random_state=random_state),
         "tree": DecisionTreeClassifier(random_state=random_state),
         "rf": RandomForestClassifier(random_state=random_state),
         "hgb": HistGradientBoostingClassifier(random_state=random_state),
-    }
+    }  
