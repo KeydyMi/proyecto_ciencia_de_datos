@@ -137,11 +137,12 @@ def build_pipeline(model, num_features=None, cat_features=None) -> Pipeline:
 
 
 def get_candidates(random_state: int = 42) -> dict:
-    """Retorna un diccionario con los modelos candidatos iniciales para validación."""
+    """Diccionario {nombre: estimador sin entrenar} con una familia variada de modelos."""
     return {
-        "dummy": DummyClassifier(strategy="most_frequent"),
+        "dummy": DummyClassifier(strategy='most_frequent'),
         "logreg": LogisticRegression(max_iter=1000, random_state=random_state),
-        "tree": DecisionTreeClassifier(random_state=random_state),
-        "rf": RandomForestClassifier(random_state=random_state),
+        "tree": DecisionTreeClassifier(max_depth=4, random_state=random_state),
+        "forest": RandomForestClassifier(n_estimators=300, random_state=random_state, n_jobs=-1),
         "hgb": HistGradientBoostingClassifier(random_state=random_state),
+        "knn": KNeighborsClassifier(),
     }
