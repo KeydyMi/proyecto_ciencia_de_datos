@@ -72,7 +72,9 @@ def survival_by_embarked_class(df: pd.DataFrame) -> pd.DataFrame:         # Paso
 def add_fare_quartile(df: pd.DataFrame) -> pd.DataFrame:                  # Paso 36 (1)
     """Añade cuartiles de tarifa (Fare)."""
     df = df.copy()
-    df['FareQuartile'] = pd.qcut(df['Fare'], q=4, labels=['Q1', 'Q2', 'Q3', 'Q4'])
+    df['FareQ'] = df.groupby('Pclass')['Fare'].transform(
+        lambda s: pd.qcut(s, 4, labels=['Q1', 'Q2', 'Q3', 'Q4'], duplicates='drop')
+    )
     return df
 
 
@@ -82,7 +84,7 @@ def survival_by_fare_quartile_class(df: pd.DataFrame) -> pd.DataFrame:    # Paso
     tabla = pd.pivot_table(
         df_temp, 
         values='Survived', 
-        index='FareQuartile', 
+        index='FareQ', 
         columns='Pclass', 
         aggfunc='mean'
     )
